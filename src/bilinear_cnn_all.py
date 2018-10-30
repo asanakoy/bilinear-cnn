@@ -63,7 +63,7 @@ def main():
         os.makedirs(model_dir)
     path = {
         'cub200': os.path.expanduser('~/workspace/datasets/cub200'),
-        'model': model_dir
+        'model': model_dir,
         'ckpt_path': os.path.join(model_dir, 'vgg_16_fc_epoch_best.pth')
     }
 
