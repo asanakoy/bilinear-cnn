@@ -6,7 +6,7 @@ Usage:
     CUDA_VISIBLE_DEVICES=0,1,2,3 ./src/bilinear_cnn_all.py --base_lr 0.05 \
         --batch_size 64 --epochs 100 --weight_decay 5e-4
 """
-
+from __future__ import print_function
 
 import os
 
@@ -103,7 +103,9 @@ class BCNNManager(object):
         # Network.
         self._net = torch.nn.DataParallel(BCNN()).cuda()
         # Load the model from disk.
-        self._net.load_state_dict(torch.load(self._path['model']))
+        model_path = os.path.join(self._path['model'], 'vgg_16_epoch_best.pth')
+        print('Loading', model_path)
+        self._net.load_state_dict(torch.load(model_path))
         print(self._net)
         # Criterion.
         self._criterion = torch.nn.CrossEntropyLoss().cuda()
@@ -178,6 +180,10 @@ class BCNNManager(object):
                 best_acc = test_acc
                 best_epoch = t + 1
                 print('*', end='')
+                # Save best
+                save_path_best = os.path.join(self._path['model'], 'vgg_16_ft_all_epoch_best.pth')
+                print('Saving', save_path_best)
+                torch.save(self._net.state_dict(), save_path_best)
             print('%d\t%4.3f\t\t%4.2f%%\t\t%4.2f%%' %
                   (t+1, sum(epoch_loss) / len(epoch_loss), train_acc, test_acc))
         print('Best at epoch %d, test accuaray %f' % (best_epoch, best_acc))
@@ -242,8 +248,9 @@ def main():
     parser.add_argument('--weight_decay', dest='weight_decay', type=float,
                         required=True, help='Weight decay.')
     parser.add_argument('--model', dest='model', type=str, required=True,
-                        help='Model for fine-tuning.')
+                        help='Model name')
     args = parser.parse_args()
+    print(args)
     if args.base_lr <= 0:
         raise AttributeError('--base_lr parameter must >0.')
     if args.batch_size <= 0:
@@ -261,8 +268,9 @@ def main():
     }
 
     project_root = os.popen('pwd').read().strip()
+    print('Project root:', project_root)
     path = {
-        'cub200': os.path.join(project_root, 'data/cub200'),
+        'cub200': os.path.expanduser('~/workspace/datasets/cub200'),
         'model': os.path.join(project_root, 'model', args.model),
     }
     for d in path:

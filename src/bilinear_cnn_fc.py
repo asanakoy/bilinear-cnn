@@ -6,9 +6,10 @@ Usage:
     CUDA_VISIBLE_DEVICES=0,1,2,3 ./src/bilinear_cnn_fc.py --base_lr 0.05 \
         --batch_size 64 --epochs 100 --weight_decay 5e-4
 """
-
+from __future__ import print_function
 
 import os
+import shutil
 
 import torch
 import torchvision
@@ -185,9 +186,10 @@ class BCNNManager(object):
                 best_epoch = t + 1
                 print('*', end='')
                 # Save model onto disk.
-                torch.save(self._net.state_dict(),
-                           os.path.join(self._path['model'],
-                                        'vgg_16_epoch_%d.pth' % (t + 1)))
+                save_path = os.path.join(self._path['model'], 'vgg_16_epoch_%d.pth' % (t + 1))
+                save_path_best = os.path.join(self._path['model'], 'vgg_16_epoch_best.pth')
+                torch.save(self._net.state_dict(), save_path)
+                shutil.copy(save_pth, save_path_best)
             print('%d\t%4.3f\t\t%4.2f%%\t\t%4.2f%%' %
                   (t+1, sum(epoch_loss) / len(epoch_loss), train_acc, test_acc))
         print('Best at epoch %d, test accuaray %f' % (best_epoch, best_acc))
@@ -251,7 +253,10 @@ def main():
                         required=True, help='Epochs for training.')
     parser.add_argument('--weight_decay', dest='weight_decay', type=float,
                         required=True, help='Weight decay.')
+    parser.add_argument('--model', dest='model', type=str, required=True,
+                        help='Model name')
     args = parser.parse_args()
+    print(args)
     if args.base_lr <= 0:
         raise AttributeError('--base_lr parameter must >0.')
     if args.batch_size <= 0:
@@ -269,15 +274,17 @@ def main():
     }
 
     project_root = os.popen('pwd').read().strip()
+    print('Project root:', project_root)
+    model_dir = os.path.join(project_root, 'model', args.model)
+    if not os.path.exists(model_dir):
+        os.makedirs(model_dir)
     path = {
-        'cub200': os.path.join(project_root, 'data/cub200'),
-        'model': os.path.join(project_root, 'model'),
+        'cub200': os.path.expanduser('~/workspace/datasets/cub200'),
+        'model': model_dir
     }
-    for d in path:
-        assert os.path.isdir(path[d])
 
     manager = BCNNManager(options, path)
-    # manager.getStat()
+    manager.getStat()
     manager.train()
 
 
