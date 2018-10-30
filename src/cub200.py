@@ -14,10 +14,13 @@ is as follows.
 This file is modified from:
     https://github.com/vishwakftw/vision.
 """
-
+from __future__ import print_function
+from __future__ import division
 
 import os
 import pickle
+import sys
+import time
 
 import numpy as np
 import PIL.Image
@@ -148,15 +151,16 @@ class CUB200(torch.utils.data.Dataset):
         raw_path = os.path.join(self._root, 'raw')
         processed_path = os.path.join(self._root, 'processed')
         if not os.path.isdir(raw_path):
-            os.mkdir(raw_path, mode=0o775)
+            os.makedirs(raw_path)
         if not os.path.isdir(processed_path):
-            os.mkdir(processed_path, mode=0x775)
+            os.makedirs(processed_path)
 
         # Downloads file.
         fpath = os.path.join(self._root, 'raw/CUB_200_2011.tgz')
         try:
             print('Downloading ' + url + ' to ' + fpath)
-            six.moves.urllib.request.urlretrieve(url, fpath)
+            six.moves.urllib.request.urlretrieve(url, fpath, download_reporthook)
+            print('')
         except six.moves.urllib.error.URLError:
             if url[:5] == 'https:':
                 self._url = self._url.replace('https:', 'http:')
@@ -174,6 +178,7 @@ class CUB200(torch.utils.data.Dataset):
 
     def _extract(self):
         """Prepare the data for train/test split and save onto disk."""
+        print('Preparing the data for train/test split...')
         image_path = os.path.join(self._root, 'raw/CUB_200_2011/images/')
         # Format of images.txt: <image_id> <image_name>
         id2name = np.genfromtxt(os.path.join(
@@ -203,7 +208,22 @@ class CUB200(torch.utils.data.Dataset):
                 test_data.append(image_np)
                 test_labels.append(label)
 
+        print('Saving processed train/test split onto disk...')
         pickle.dump((train_data, train_labels),
                     open(os.path.join(self._root, 'processed/train.pkl'), 'wb'))
         pickle.dump((test_data, test_labels),
                     open(os.path.join(self._root, 'processed/test.pkl'), 'wb'))
+
+
+def download_reporthook(count, block_size, total_size):
+    global start_time
+    if count == 0:
+        start_time = time.time()
+        return
+    duration = time.time() - start_time
+    progress_size = int(count * block_size)
+    speed = int(progress_size / (1024 * duration))
+    percent = int(count * block_size * 100 / total_size)
+    sys.stdout.write("\r...%d%%, %d MB, %d KB/s, %d s passed" %
+                    (percent, progress_size / (1024 * 1024), speed, duration))
+    sys.stdout.flush()
