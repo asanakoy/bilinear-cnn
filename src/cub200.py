@@ -74,7 +74,7 @@ class CUB200(torch.utils.data.Dataset):
         self._target_transform = target_transform
 
         if self._checkIntegrity():
-            print('Files already downloaded and verified.')
+            print('CUB200: Files already downloaded and verified.')
         elif download:
             url = ('http://www.vision.caltech.edu/visipedia-data/CUB-200-2011/'
                    'CUB_200_2011.tgz')
@@ -86,11 +86,13 @@ class CUB200(torch.utils.data.Dataset):
 
         # Now load the picked data.
         if self._train:
+            print('Loading train in RAM...')
             self._train_data, self._train_labels = pickle.load(open(
                 os.path.join(self._root, 'processed/train.pkl'), 'rb'))
             assert (len(self._train_data) == 5994
                     and len(self._train_labels) == 5994)
         else:
+            print('Loading test in RAM...')
             self._test_data, self._test_labels = pickle.load(open(
                 os.path.join(self._root, 'processed/test.pkl'), 'rb'))
             assert (len(self._test_data) == 5794
