@@ -93,6 +93,7 @@ class BCNNTrainer(object):
     def train(self):
         """Train the network."""
         print('Training.')
+        self._net.train()
         best_acc = 0.0
         best_epoch = None
         for epoch in range(self._options['epochs']):
@@ -148,20 +149,19 @@ class BCNNTrainer(object):
         Returns:
             Train/Test accuracy in percentage.
         """
-        self._net.train(False)
+        self._net.eval()
         num_correct = 0
         num_total = 0
         for X, y in data_loader:
             # Data.
             X = X.cuda(non_blocking=True)
             y = y.cuda(non_blocking=True)
-
-            # Prediction.
-            score = self._net(X)
-            _, prediction = torch.max(score.data, 1)
-            num_total += y.size(0)
-            num_correct += torch.sum(prediction == y.data).item()
-        self._net.train(True)  # Set the model to training phase
+            with torch.no_grad():
+                # Prediction.
+                score = self._net(X)
+                _, prediction = torch.max(score.data, 1)
+                num_total += y.size(0)
+                num_correct += torch.sum(prediction == y.data).item()
         return 100 * num_correct / num_total
 
     def getStat(self):
