@@ -57,9 +57,15 @@ class BCNNTrainer(object):
         self._solver = torch.optim.SGD(
             self._net.fc.parameters(), lr=self._options['base_lr'],
             momentum=0.9, weight_decay=self._options['weight_decay'])
-        self._scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            self._solver, mode='max', factor=0.1, patience=3, verbose=True,
-            threshold=1e-4)
+        if self._options['lr_scheduler'] == 'reduce_on_plateau':
+            self._scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+                self._solver, mode='max', factor=0.1, patience=5, verbose=True,
+                threshold=1e-4, min_lr=1e-6)
+        elif self._options['lr_scheduler'] == 'fixed':
+            self._scheduler = torch.optim.lr_scheduler.LambdaLR(self._solver,
+                lambda epoch: 1.0)
+        else:
+            raise ValueError('Unknown scheduler:', self._options['lr_scheduler'])
 
 	# Imagenet normalization
 	normalize = torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406],

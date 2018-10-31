@@ -33,8 +33,12 @@ def main():
                         required=True, help='Epochs for training.')
     parser.add_argument('--weight_decay', dest='weight_decay', type=float,
                         required=True, help='Weight decay.')
-    parser.add_argument('--model', dest='model', type=str, required=True,
-                        help='Model name')
+    parser.add_argument('--model', dest='model', type=str, required=True)
+    parser.add_argument('--lr_scheduler', type=str,
+                        default='reduce_on_plateau',
+                        choices=['reduce_on_plateau',
+                                 'fixed'],
+                        help='LR scheduler')
     args = parser.parse_args()
     print(args)
     if args.base_lr <= 0:
@@ -45,13 +49,6 @@ def main():
         raise AttributeError('--epochs parameter must >=0.')
     if args.weight_decay <= 0:
         raise AttributeError('--weight_decay parameter must >0.')
-
-    options = {
-        'base_lr': args.base_lr,
-        'batch_size': args.batch_size,
-        'epochs': args.epochs,
-        'weight_decay': args.weight_decay,
-    }
 
     project_root = os.popen('pwd').read().strip()
     print('Project root:', project_root)
@@ -64,7 +61,7 @@ def main():
 #        'ckpt_path': os.path.join(model_dir, 'vgg_16_fc_epoch_best.pth')
     }
 
-    manager = BCNNTrainer(options, path, ckpt_basename='vgg_16_fc')
+    manager = BCNNTrainer(vars(args), path, ckpt_basename='vgg_16_fc')
     #manager.getStat()
     manager.train()
 
